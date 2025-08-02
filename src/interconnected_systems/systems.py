@@ -49,7 +49,7 @@ class SampledDataController:
             "plant_dt must be an integral multiple of the controller's dt"
         self.__sampler = SampledDataController.Details(self.__controller, plant_dt)
 
-    def create(self) -> control.StateSpace:
+    def create(self) -> control.InputOutputSystem:
         return control.ss(
             self.__sampler.update_function, self.__sampler.output_function,
             dt=self.__plant_dt, name=self.__controller.name, inputs=self.__controller.input_labels,
@@ -57,12 +57,8 @@ class SampledDataController:
         )
 
 
-def try_sampled_controller():
-    controller_ts = 0.1
-    controller = control.tf(1, [1, -.9], controller_ts, inputs='e', outputs='u')
-    controller_sim = SampledDataController(controller, SIMULATION_DT)
-    print(controller_sim.create())
 
 
 if __name__ == "__main__":
-    try_sampled_controller()
+    # try_sampled_controller
+    ...
