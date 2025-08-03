@@ -24,3 +24,8 @@ class VehicleDynamics:
     def vehicle_putput(self, t: float, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
         ...
 
+@dataclasses.dataclass
+class MotorTorqueFunctor:
+    tm: float = dataclasses.field(default=190)
+    omega_m: float = dataclasses.field(default=430)
+    beta: float = dataclasses.field(default=0.5)
