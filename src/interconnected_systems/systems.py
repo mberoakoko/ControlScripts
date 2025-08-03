@@ -1,6 +1,7 @@
 import dataclasses
 import control
 import numpy as np
+from typing import TypeAlias
 
 SIMULATION_DT = 0.02
 
@@ -10,12 +11,13 @@ class PlantFactory:
 
     @staticmethod
     def create() -> control.TransferFunction:
-        return control.tf((1, ), (0.03, 1), inputs="u", outputs="y")
+        return control.tf((0.5, ), (0.1, 1), inputs="u", outputs="y")
 
     def discretize(self, dt: float | None = None) -> control.TransferFunction:
         dt = dt if dt  else self.dt
         return control.c2d(PlantFactory.create(), dt, "zoh")
 
+ControllerSystemType: TypeAlias = control.StateSpace | control.TransferFunction
 
 class SampledDataController:
     class Details:
@@ -24,7 +26,7 @@ class SampledDataController:
             self.__y: np.ndarray = np.zeros((controller.noutputs, 1))
             self.__step: int = 0
             self.__n_steps: int = int(round(controller.dt/plant_dt))
-            self.__controller: control.NonlinearIOSystem = controller
+            self.__controller: ControllerSystemType = controller
 
         def update_function(self, t, x, u, params):
             if self.__step == 0:
@@ -40,7 +42,7 @@ class SampledDataController:
             return self.__y.copy()
 
 
-    def __init__(self, controller: control.NonlinearIOSystem, plant_dt: float):
+    def __init__(self, controller: ControllerSystemType, plant_dt: float):
         self.__plant_dt = plant_dt
         assert control.isdtime(controller, True), "Controller Must be in discrete time"
         self.__controller: control.StateSpace = control.ss(controller)
@@ -56,9 +58,20 @@ class SampledDataController:
             outputs=self.__controller.output_labels, states=self.__controller.state_labels
         )
 
+def create_closed_loop_system() -> control.InputOutputSystem:
+    controller_ts = 0.2
+    controller = control.tf(1, [1, -.9], controller_ts, inputs='e', outputs='u')
+    controller_sim = SampledDataController(controller, SIMULATION_DT).create()
+    plant_continuous = PlantFactory.create()
+    u_summer = control.summing_junction(inputs=["-y", "r"], output="e")
+    plant_simulator = control.c2d(plant_continuous, SIMULATION_DT, "zoh")
+    closed_loop_simulator = control.interconnect(
+        [controller_sim, plant_simulator, u_summer],
+        inputs="r", outputs=["y", "u"])
+    return closed_loop_simulator
 
 
 
 if __name__ == "__main__":
-    # try_sampled_controller
+    print(create_closed_loop_system())
     ...

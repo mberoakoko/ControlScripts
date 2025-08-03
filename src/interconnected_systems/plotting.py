@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
-from systems import PlantFactory, SampledDataController, SIMULATION_DT
+from systems import PlantFactory, SampledDataController, SIMULATION_DT, create_closed_loop_system
 matplotlib.use("TkAgg")
 plt.style.use("bmh")
 plt.rcParams.update({"font.size": 8})
@@ -28,7 +28,7 @@ def plot_simuulated_sampled_controller()->None:
     controller = control.tf(1, [1, -.9], controller_ts, inputs='e', outputs='u')
     controller_sim = SampledDataController(controller, SIMULATION_DT)
     print(controller_sim.create())
-    time = np.arange(0, 1.5, SIMULATION_DT)
+    time = np.arange(0, 5, SIMULATION_DT)
     step_input = np.ones_like(time)
     t, y = control.input_output_response(controller_sim.create(), time, step_input)
     fig: Figure = plt.figure(figsize=(16//2, 9//2))
@@ -39,7 +39,26 @@ def plot_simuulated_sampled_controller()->None:
     plt.show()
 
 
+def plot_simulated_closed_loop_sampled_system() -> None:
+    closed_loop_system = create_closed_loop_system()
+    time = np.arange(0, 5, SIMULATION_DT)
+    step_input = np.ones_like(time)
+    t, (y, u) = control.input_output_response(closed_loop_system, time,  step_input)
+    fig: Figure = plt.figure(figsize=(16//2, 9//2))
+    ax_1: Axes = fig.add_subplot(211)
+    ax_2: Axes = fig.add_subplot(212)
+    ax_1.plot(t, y, ".-", color="C1", label="Step response")
+    ax_2.plot(t, u, ".-", color="C2", label="Control Command")
+    ax_1.legend()
+    ax_2.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
 
 if __name__ == "__main__":
     # plot_continuous_vs_discrete_plant()
-    plot_simuulated_sampled_controller()
+    plot_simulated_closed_loop_sampled_system()
