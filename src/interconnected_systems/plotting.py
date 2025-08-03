@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
-from systems import PlantFactory, SampledDataController, SIMULATION_DT, create_closed_loop_system
+from systems import PlantFactory, SampledDataController, SIMULATION_DT, create_closed_loop_system, DelaySystem
 matplotlib.use("TkAgg")
 plt.style.use("bmh")
 plt.rcParams.update({"font.size": 8})
@@ -55,10 +55,31 @@ def plot_simulated_closed_loop_sampled_system() -> None:
     plt.show()
 
 
+def plot_time_delay_as_state_space() -> None:
+    delay_system = DelaySystem(
+        delay=1.2,
+        dt=SIMULATION_DT,
+        inputs=["u"],
+        outputs=["y"]
+    )
+    time = np.arange(0, 1.5, SIMULATION_DT)
+    step_input = np.ones_like(time)
+    print(delay_system.generate_system())
+    t, y = control.input_output_response(delay_system.generate_system(), time, step_input)
+    fig: Figure = plt.figure(figsize=(16//2, 9//2))
+    ax: Axes = fig.add_subplot()
+    ax.plot(t, step_input, ".-", color="C4", label="Command Signal")
+    ax.plot(t, y,".-", color="C1", label="Delay response")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
 
 
 
 
 if __name__ == "__main__":
     # plot_continuous_vs_discrete_plant()
-    plot_simulated_closed_loop_sampled_system()
+    # plot_simulated_closed_loop_sampled_system()
+    plot_time_delay_as_state_space()

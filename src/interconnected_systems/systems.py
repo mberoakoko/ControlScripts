@@ -71,6 +71,26 @@ def create_closed_loop_system() -> control.InputOutputSystem:
     return closed_loop_simulator
 
 
+@dataclasses.dataclass
+class DelaySystem:
+    delay: float
+    dt: float
+    inputs: list[str]
+    outputs: list[str]
+
+    def generate_system(self) -> control.InputOutputSystem:
+        assert self.delay >= 0 , "System must have a positive delay"
+        n = int(round(self.delay/self.dt))
+        n_inputs = len(self.inputs)
+        assert n_inputs == 1, "We only support one input"
+        A = np.eye(n, k=-1)
+        B = np.eye(n, 1)
+        C = np.eye(1, n, k=n-1)
+        D = np.zeros((1, 1))
+        return control.ss(A, B, C, D, self.dt, inputs=self.inputs, outputs=self.outputs)
+
+
+
 
 if __name__ == "__main__":
     print(create_closed_loop_system())
