@@ -19,7 +19,17 @@ class VehicleDynamics:
     alpha: float
 
     def vehicle_update(self, t, x:np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
-        ...
+        throttle, gear, theta = u
+        velocity = x
+        throttle = np.clip(throttle, 0, 1)
+        omega = self.alpha[int(gear) - 1] * velocity
+        f = self.alpha[int(gear) - 1] * motor_torque(omega) * throttle
+
+        f_g = self.m * self.g * sin(theta)
+        f_t = self.m * self.g * self.c_r * sign(velocity)
+        f_a = 1/2 * self.rho * self.c_d * self.A * abs(velocity) * velocity
+        f_disturbance = f_g + f_t + f_a
+        return ( f - f_disturbance)/self.m
 
     def vehicle_putput(self, t: float, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
         ...
