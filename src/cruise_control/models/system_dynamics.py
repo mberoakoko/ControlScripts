@@ -9,6 +9,17 @@ def sign(x: float) -> float:
     return copysign(1, x)
 
 @dataclasses.dataclass
+class MotorTorqueFunctor:
+    tm: float = dataclasses.field(default=190)
+    omega_m: float = dataclasses.field(default=430)
+    beta: float = dataclasses.field(default=0.5)
+
+    def __call__(self, omega: float | np.ndarray) -> np.ndarray:
+        return np.clip(self.tm * (1 - self.beta * (omega/self.omega_m - 1)**2), 0, None)
+
+motor_torque = MotorTorqueFunctor()
+
+@dataclasses.dataclass
 class VehicleDynamics:
     m: float
     g: float
