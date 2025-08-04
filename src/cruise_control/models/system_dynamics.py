@@ -1,11 +1,12 @@
 import control
 import dataclasses
 from math import copysign, sin
+from typing import Callable
 
 import numpy as np
 
 
-def sign(x: float) -> float:
+def sign(x: float | np.ndarray) -> float:
     return copysign(1, x)
 
 @dataclasses.dataclass
@@ -21,13 +22,14 @@ motor_torque = MotorTorqueFunctor()
 
 @dataclasses.dataclass
 class VehicleDynamics:
-    m: float
-    g: float
-    c_r: float
-    c_d: float
-    rho: float
-    A: float
-    alpha: float
+    m: float            = dataclasses.field(default=1600)
+    g: float            = dataclasses.field(default=9.8)
+    c_r: float          = dataclasses.field(default=0.01)
+    c_d: float          = dataclasses.field(default=0.32)
+    rho: float          = dataclasses.field(default=1.3)
+    A: float            = dataclasses.field(default=2.4)  # car area
+    alpha: list[float]  = dataclasses.field(default=(40, 25, 16, 12, 10))
+    # motor_torque: Callable[[float], np.ndarray] = dataclasses.field(default=MotorTorqueFunctor())
 
     def vehicle_update(self, t, x:np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
         throttle, gear, theta = u
@@ -42,11 +44,16 @@ class VehicleDynamics:
         f_disturbance = f_g + f_t + f_a
         return ( f - f_disturbance)/self.m
 
-    def vehicle_putput(self, t: float, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
-        ...
 
-@dataclasses.dataclass
-class MotorTorqueFunctor:
-    tm: float = dataclasses.field(default=190)
-    omega_m: float = dataclasses.field(default=430)
-    beta: float = dataclasses.field(default=0.5)
+    def as_non_linear_io_system(self) -> control.NonlinearIOSystem:
+        return control.NonlinearIOSystem(
+            self.vehicle_update, None, name="Vehicle",
+            inputs=("u", "gear", "theta"), outputs=("v",), states=("v",)
+        )
+
+
+if __name__ == "__main__":
+    motor_torque = MotorTorqueFunctor()
+    t_omegas = np.arange(0, 100, 1)
+    print(motor_torque(omega=1))
+    print(np.vectorize(motor_torque)(t_omegas))
