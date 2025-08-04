@@ -34,7 +34,7 @@ def create_hilly_trajectory(flat_trajectory: TimeAndInputTrajectories):
         t = flat_trajectory.t,
         v_ref=flat_trajectory.v_ref,
         gear=flat_trajectory.gear,
-        theta_0=theta_hill
+        theta_0=np.array(theta_hill)
     )
 
 def find_equilibrium(vehicle_plant: control.InputOutputSystem, v_ref: float, gear: float, theta: float):
