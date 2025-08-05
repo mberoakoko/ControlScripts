@@ -7,14 +7,14 @@ import numpy as np
 @dataclasses.dataclass
 class LQRController:
     linearized_plant: control.StateSpace
-    Q: np.ndarray = dataclasses.field(default=np.diag([1, 1, 1]))
-    R: np.ndarray = dataclasses.field(default=np.diag([1, 1]))
+    Q: np.ndarray = dataclasses.field(default=np.diag([1, 1, 100])) # X Y Theta Weighting
+    R: np.ndarray = dataclasses.field(default=np.diag([10, 1])) # velocity delta
     K: np.ndarray = dataclasses.field(init=False)
 
     def __post_init__(self):
         self.K, _, _ = control.lqr(self.linearized_plant, self.Q, self.R)
 
-    def __controller_output(self, t, x: np.ndarray, z: np.ndarray, params) -> control.NonlinearIOSystem:
+    def __controller_output(self, t, x: np.ndarray, z: np.ndarray, params) -> np.ndarray:
         x_d_vec = z[:3]
         u_d_vec = z[3:5]
         x_vec = z[5:]

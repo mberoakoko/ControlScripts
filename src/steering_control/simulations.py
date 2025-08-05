@@ -1,4 +1,5 @@
 import control
+import pandas as pd
 import numpy
 from typing import NamedTuple
 
@@ -27,5 +28,12 @@ def generate_static_trajectory(t_final: float, dt: float) -> StaticTrajectory:
 
 def simulate_lqr_system_dynamics() -> control.TimeResponseData:
     lqr_controlled_plant = VehiclePlant().create_closed_loop_system()
-    
-    return control.input_output_response(lqr_controlled_plant, )
+    trajectories = generate_static_trajectory(t_final=10, dt=0.01)
+    return control.input_output_response(lqr_controlled_plant, trajectories.t,
+                                         np.vstack((trajectories.x_d, trajectories.u_d)), 0)
+
+if __name__ == "__main__":
+    sim_results = simulate_lqr_system_dynamics()
+    print(sim_results.state_labels)
+    results_as_pandas: pd.DataFrame = sim_results.to_pandas()
+    print(results_as_pandas.head())
