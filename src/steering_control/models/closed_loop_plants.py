@@ -24,7 +24,7 @@ class VehiclePlant:
             [self.plant.as_non_linear_system(), self.controller],
             states=["x", "y", "theta"],
             inputs=["x_d","y_d", "theta_d", "v_d", "delta_d",],
-            outputs=['x', 'y', 'theta']
+            outputs=['x', 'y', 'theta', "delta"]
         )
 
 

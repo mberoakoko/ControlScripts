@@ -7,16 +7,18 @@ import numpy as np
 @dataclasses.dataclass
 class BycycleModel:
     l: float = dataclasses.field(default=3.0)           # Wheel base
-    phi_max: float = dataclasses.field(default=0.4)     # max steering angle in radians
+    a: float = dataclasses.field(default=1.5)
+    phi_max: float = dataclasses.field(default=0.5)     # max steering angle in radians
 
     def __vehicle_update(self, t, x: np.ndarray, u: np.ndarray, params) -> np.ndarray:
         v, delta = u
         x, y , theta = x
         delta = np.clip(delta, -self.phi_max, self.phi_max)
+        alpha = np.arctan2(self.a * np.tan(delta), self.l)
         return np.array([
-            np.cos(theta) * v,  # xdot = cos(theta) v
-            np.sin(theta) * v,  # ydot = sin(theta) v
-            (v / self.l) * np.tan(delta)  # thdot = v/l tan(phi)
+            np.cos(theta + alpha) * v,  # xdot = cos(theta) v
+            np.sin(theta + alpha) * v,  # ydot = sin(theta) v
+            (v / self.a) * np.sin(alpha)  # thdot = v/l tan(phi)
         ])
 
     def __vehicle_output(self, t, x: np.ndarray, u: np.ndarray, parmas):

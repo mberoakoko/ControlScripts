@@ -19,7 +19,7 @@ def generate_static_trajectory(t_final: float, dt: float) -> StaticTrajectory:
         0.5 * np.sin(timepts * 2 * np.pi),
         np.zeros_like(timepts)
     ])
-    u_d = np.array([10 * np.ones_like(timepts), np.zeros_like(timepts)])
+    u_d = np.array([1 * np.ones_like(timepts), np.zeros_like(timepts)])
     return StaticTrajectory(
         t=timepts,
         x_d=x_d,
