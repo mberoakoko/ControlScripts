@@ -41,9 +41,15 @@ def find_equilibrium(vehicle_plant: control.InputOutputSystem, v_ref: float, gea
     return control.find_eqpt(vehicle_plant, [v_ref], [0, gear, theta], y0=[v_ref], iu=[1, 2])
 
 def create_closed_loop_system() -> control.InputOutputSystem:
-    vehicle_plant = VehicleDynamics().as_non_linear_io_system()
-    print(find_equilibrium(vehicle_plant, 20, 4, 0))
-    ...
+    vehicle_dynamics  = VehicleDynamics()
+    vehicle_plant = vehicle_dynamics.as_non_linear_io_system()
+    x_eq, u_eq = find_equilibrium(vehicle_plant, 20, 4, 0)
+    print(f"X equilibrium {x_eq}")
+    print(f"u equilibrium {u_eq}")
+    linearized_vehicle_plant = control.linearize(vehicle_plant, x_eq, [u_eq[0],4, 0])
+    print(linearized_vehicle_plant)
+    controller_gains = generate_controller_gains(linearized_vehicle_plant)
+    print(controller_gains)
 
 
 if __name__ == "__main__":
