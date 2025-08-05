@@ -37,9 +37,13 @@ def generate_controller_gains(lineaerized_system: control.StateSpace) -> Control
     A: np.ndarray = lineaerized_system.A
     B: np.ndarray = lineaerized_system.B
     C: np.ndarray = lineaerized_system.C
+    print(f"{A.shape=}")
+    print(f"{B.shape=}")
     K = 0.4
+
+    print(A - B * K)
     return ControllerGains(
         K = K,
         K_I = 0.1,
-        K_F = -1/(C * np.linalg.inv(A - B @ K) * B)
+        K_F = -1/(C * np.linalg.inv(A - B * K) * B)
     )
