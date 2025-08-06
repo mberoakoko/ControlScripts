@@ -2,7 +2,7 @@ import dataclasses
 import numpy as np
 import control
 
-from .system_dynamics import BycycleModel
+from .system_dynamics import BycycleModel, NoiseBlock, NoiseAndDelayBlock
 from .controllers import LQRController
 
 
@@ -27,6 +27,10 @@ class VehiclePlant:
             outputs=['x', 'y', 'theta', "delta"]
         )
 
+@dataclasses.dataclass
+class VehiclePlantNoisy:
+    plant: BycycleModel = dataclasses.field(default=BycycleModel())
+    controller: control.NonlinearIOSystem = dataclasses.field(init=False)
 
     def __post_init__(self):
         self.controller = LQRController(
@@ -38,10 +42,11 @@ class VehiclePlant:
 
     def create_closed_loop_system(self) -> control.NonlinearIOSystem:
         nominal_plant = self.plant.as_non_linear_system()
-        noise_block = NoiseBlock().as_non_linear_io_system()
+        noise_block = NoiseAndDelayBlock().as_non_linear_io_system(num_states=3)
+        print(f"{nominal_plant.state_labels=}")
         noise_plant = control.interconnect(
             [nominal_plant, noise_block],
-            states=nominal_plant.state_labels,
+            # states=nominal_plant.state_labels,
             inputs=nominal_plant.input_labels,
             outputs=noise_block.output_labels
         )
@@ -50,13 +55,12 @@ class VehiclePlant:
         print(self.controller)
         return control.interconnect(
             [noise_plant, self.controller],
-            states=["x", "y", "theta"],
+            states=["x", "y", "theta","x_n", "y_n", "theta_n"],
             inputs=["x_d","y_d", "theta_d", "v_d", "delta_d",],
             outputs=['x_n', 'y_n', 'theta_n', "delta"]
         )
 
 
 if __name__ == "__main__":
-    print(VehiclePlant(
-        plant=BycycleModel()
-    ).create_closed_loop_system())
+    noisy_vehicle_plant = VehiclePlantNoisy()
+    print(noisy_vehicle_plant.create_closed_loop_system())

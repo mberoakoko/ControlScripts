@@ -7,8 +7,8 @@ import numpy as np
 @dataclasses.dataclass
 class LQRController:
     linearized_plant: control.StateSpace
-    Q: np.ndarray = dataclasses.field(default=np.diag([1, 1, 1])) # X Y Theta Weighting
-    R: np.ndarray = dataclasses.field(default=np.diag([0.001, 1])) # velocity delta
+    Q: np.ndarray = dataclasses.field(default=np.diag([10, 100, 0.001])) # X Y Theta Weighting
+    R: np.ndarray = dataclasses.field(default=np.diag([0.1, 0.1])) # velocity delta
     K: np.ndarray = dataclasses.field(init=False)
 
     def __post_init__(self):
@@ -19,13 +19,20 @@ class LQRController:
     def __controller_output(self, t, x: np.ndarray, z: np.ndarray, params) -> np.ndarray:
         x_d_vec = z[:3]
         u_d_vec = z[3:5]
-        x_vec = z[5:]
-        return u_d_vec - self.K @ (x_d_vec - x_vec)
+        x_vec = z[5:8]
+        return u_d_vec - self.K @ (x_vec - x_d_vec)
 
     def as_non_linear_io_system(self) -> control.NonlinearIOSystem:
         return control.NonlinearIOSystem(
             None, self.__controller_output, name="LQR_controller",
             inputs=("x_d","y_d", "theta_d", "v_d", "delta_d", "x", "y", "theta"),
+            outputs=("v", "delta")
+        )
+
+    def as_non_linear_io_system_noisy_block(self) -> control.NonlinearIOSystem:
+        return control.NonlinearIOSystem(
+            None, self.__controller_output, name="LQR_controller_noisy_input",
+            inputs=("x_d","y_d", "theta_d", "v_d", "delta_d", "x_n", "y_n", "theta_n"),
             outputs=("v", "delta")
         )
 

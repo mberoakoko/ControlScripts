@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from simulations import simulate_lqr_system_dynamics
+from simulations import simulate_lqr_system_dynamics, simulate_lqr_system_noisy_dynamics
 
 matplotlib.use("TkAgg")
 plt.style.use('https://github.com/dhaitz/matplotlib-stylesheets/raw/master/pitayasmoothie-dark.mplstyle')
@@ -59,6 +59,6 @@ def plot_lqr_controller_response(time_response: control.TimeResponseData) -> Non
 
 if __name__ == "__main__":
     plot_lqr_controller_response(
-        time_response=simulate_lqr_system_dynamics()
+        time_response=simulate_lqr_system_noisy_dynamics()
     )
 
