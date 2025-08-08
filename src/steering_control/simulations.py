@@ -44,6 +44,18 @@ def simulate_lqr_system_noisy_dynamics() -> control.TimeResponseData:
     return control.input_output_response(lqr_controlled_plant, trajectories.t,
                                          np.vstack((trajectories.x_d, trajectories.u_d)), 0)
 
+def simulate_lqr_system_with_exogenous_noise() -> control.TimeResponseData:
+    noisy_plant = VehiclePlantExogenousNoise().create_closed_loop_system()
+    print("-----" * 20)
+    print("LQR CONTROLLED PLANT")
+    print("-----" * 20)
+    print(noisy_plant)
+    trajectories = generate_static_trajectory(t_final=10, dt=0.01, scale=4)
+    return control.input_output_response(noisy_plant,
+                                         trajectories.t,
+                                         np.vstack((trajectories.x_d, trajectories.u_d, trajectories.x_n)),
+                                         0)
+
 if __name__ == "__main__":
     # sim_results = simulate_lqr_system_dynamics()
     # print(sim_results.state_labels)
