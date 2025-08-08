@@ -5,14 +5,15 @@ from typing import NamedTuple
 
 import numpy as np
 
-from models.closed_loop_plants import VehiclePlant, VehiclePlantNoisy
+from models.closed_loop_plants import VehiclePlant, VehiclePlantNoisy, VehiclePlantExogenousNoise
 
 class StaticTrajectory(NamedTuple):
     t: np.ndarray
     x_d: np.ndarray
     u_d: np.ndarray
+    x_n: np.ndarray
 
-def generate_static_trajectory(t_final: float, dt: float) -> StaticTrajectory:
+def generate_static_trajectory(t_final: float, dt: float, scale: float = 0.1) -> StaticTrajectory:
     timepts = np.linspace(0, t_final, round(t_final/dt))
     x_d = np.array([
         8 * timepts + 4 * (timepts - 5) * (timepts > 5),
@@ -20,10 +21,16 @@ def generate_static_trajectory(t_final: float, dt: float) -> StaticTrajectory:
         np.zeros_like(timepts)
     ])
     u_d = np.array([1 * np.ones_like(timepts), np.zeros_like(timepts)])
+    x_n = np.array([
+        np.random.normal(loc=0, scale=scale, size=timepts.size),
+        np.random.normal(loc=0, scale=scale, size=timepts.size),
+        np.random.normal(loc=0, scale=scale, size=timepts.size)
+    ])
     return StaticTrajectory(
         t=timepts,
         x_d=x_d,
-        u_d=u_d
+        u_d=u_d,
+        x_n=x_n
     )
 
 def simulate_lqr_system_dynamics() -> control.TimeResponseData:
@@ -61,4 +68,5 @@ if __name__ == "__main__":
     # print(sim_results.state_labels)
     # results_as_pandas: pd.DataFrame = sim_results.to_pandas()
     # print(results_as_pandas.head())
-    simulate_lqr_system_noisy_dynamics()
+    sim_result = simulate_lqr_system_with_exogenous_noise()
+    print(sim_result.to_pandas().head())

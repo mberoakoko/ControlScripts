@@ -34,8 +34,47 @@ class BycycleModel:
             outputs=("x", "y", "theta")
         )
 
+
     def as_linear_stata_space(self, x_equilibrium: np.ndarray, u_equilibrium: np.ndarray) -> control.StateSpace:
         return control.linearize(self.as_non_linear_system(), x_equilibrium.tolist(), u_equilibrium.tolist())
+
+@dataclasses.dataclass
+class BycycleModelWithNoise:
+    l: float = dataclasses.field(default=3.0)  # Wheel base
+    a: float = dataclasses.field(default=1.5)
+    phi_max: float = dataclasses.field(default=0.5)  # max steering angle in radians
+
+    def __vehicle_update(self, t, x: np.ndarray, u: np.ndarray, params) -> np.ndarray:
+        v, delta = u[:2]
+        noise = u[2:]
+        x, y, theta = x[:3]
+
+        delta = np.clip(delta, -self.phi_max, self.phi_max)
+        alpha = np.arctan2(self.a * np.tan(delta), self.l)
+
+        return np.array([
+            np.cos(theta + alpha) * v,  # xdot = cos(theta) v
+            np.sin(theta + alpha) * v,  # ydot = sin(theta) v
+            (v / self.a) * np.sin(alpha)  # thdot = v/l tan(phi)
+        ]) + noise
+
+    def __vehicle_output(self, t, x: np.ndarray, u: np.ndarray, parmas):
+        return x
+
+    def as_non_linear_system(self) -> control.NonlinearIOSystem:
+        return control.NonlinearIOSystem(
+            self.__vehicle_update, self.__vehicle_output,
+            name="Nonlinear Vehicle Plant",
+            states=["x", "y", "theta"],
+            inputs=("v", "delta","x_n", "y_n", "theta_n"),
+            outputs=("x", "y", "theta")
+        )
+    
+
+    def as_linear_stata_space(self, x_equilibrium: np.ndarray, u_equilibrium: np.ndarray) -> control.StateSpace:
+        return control.linearize(self.as_non_linear_system(), x_equilibrium.tolist(), u_equilibrium.tolist())
+
+
 
 # @dataclasses.dataclass
 # class NoiseBlock:
@@ -64,7 +103,7 @@ class BycycleModel:
 
 @dataclasses.dataclass
 class NoiseBlock:
-    scale: float = dataclasses.field(default=0.1)
+    scale: float = dataclasses.field(default=0.0)
 
     def __noise_outputs(self, t, x: np.ndarray, u: np.ndarray, params) -> np.ndarray:
         noise = np.random.normal(loc=0, scale=self.scale, size=u.shape)
