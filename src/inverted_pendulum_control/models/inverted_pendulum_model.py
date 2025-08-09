@@ -59,6 +59,12 @@ class InvertedPendulum:
         )
 
 def linearize_plant(inverted_pendulum_system: InvertedPendulum, measurement: MeasurementType = MeasurementType.FULLSTATE)-> control.StateSpace:
+    """
+    Function linearizes plant depending on what type of measurements we are getting from the plant
+    :param inverted_pendulum_system: Inverted Pendulum Struct
+    :param measurement: measurement type
+    :return: inverted pendulum as a state space system
+    """
     def plant_factory(measurement_:MeasurementType) ->control.NonlinearIOSystem:
         inner_plant = None
         match measurement_:
