@@ -8,6 +8,15 @@ matplotlib.use("TkAgg")
 plt.style.use('https://github.com/dhaitz/matplotlib-stylesheets/raw/master/pitayasmoothie-dark.mplstyle')
 plt.rcParams.update({"font.size":7})
 
+def add_legend_and_plot(ax_1, ax_2, ax_3, ax_4, ax_5, data, t_data):
+    ax_5.plot(t_data, data["u_force"], linewidth=0.7, color="C5", label="u_force")
+    for axis in [ax_1, ax_2, ax_3, ax_4, ax_5]:
+        axis.legend()
+    plt.title("Stabiling Controller")
+    plt.tight_layout()
+    plt.show()
+
+
 def simple_stabilizing_plot(response_data: control.TimeResponseData) -> None:
     data = response_data.to_pandas()
     t_data = data["time"]
