@@ -12,8 +12,12 @@ class PID_Controller:
         s = control.tf([1, 0], [1])
         return self.k + (self.k_i/s) + (s*self.k_d)
 
+    def __as_state_space(self) -> control.StateSpace:
+        return control.tf2ss(self.__as_transfer_function(), inputs=["y"], outputs=["tau"])
+
     def temp_func(self) -> None:
         print(self.__as_transfer_function())
+        print(self.__as_state_space())
 
 
 if __name__ == "__main__":

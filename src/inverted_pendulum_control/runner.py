@@ -4,11 +4,15 @@ import pathlib
 
 import pandas as pd
 
-from simulator import simulate_closed_loop_stabiling_plant
-from plotting_ops import simple_stabilizing_plot
+from simulator import (
+    simulate_closed_loop_stabiling_plant,
+    simulate_closed_loop_command_following_plant
+)
+from plotting_ops import simple_stabilizing_plot, plot_controller_performance
 from observers.least_squares_filter import LeastSquaresFilter
 from observers.linear_time_invariant_filtering import FilterBlock
-from models.inverted_pendulum_closed_loop import InvertedPendulum, linearize_plant
+from models.inverted_pendulum_closed_loop import InvertedPendulum, linearize_plant, create_lqr_stabilizing_and_command_following_plant
+from models.controllers import LQR_CommandFollowind_Controller
 
 
 def run_stabilization_control_algorithm(save_tag: str = "stabilization_simulation") -> None:
@@ -24,6 +28,12 @@ def run_stabilization_control_algorithm(save_tag: str = "stabilization_simulatio
         response_data=response
     )
     response.to_pandas().to_csv(save_location)
+
+def test_full_state_feedback_command_following() -> None:
+    plant_controller = LQR_CommandFollowind_Controller(
+        plant=linearize_plant(InvertedPendulum())
+    )
+    plant_controller.test_func()
 
 def test_least_squares_filter() -> None:
 
@@ -62,10 +72,20 @@ def test_lti_butter_worthfilter():
     lti_filter = filter_obj.as_non_linear_io_system()
     data_raw = _load_data()
     columns = ["x", "v", "theta", "theta_dot"]
-    t = data_raw["time"].to_numpy()[:20]
-    data: np.ndarray = data_raw.loc[:, columns].to_numpy().T[:, :20]
+    t = data_raw["time"].to_numpy()
+    data: np.ndarray = data_raw.loc[:, columns].to_numpy().T
     filter_result = control.input_output_response(lti_filter, t, data, initial_state=None)
-    print(filter_result.to_pandas().to_string())
+    filter_result.to_pandas().to_csv(pathlib.Path(__file__).parent / "data/test_lti_butter_filter.csv")
+    print("Simulation Completed")
+
+
+def test_lqr_command_following_and_stabilizing_controller() -> None:
+    stabilized_plant = create_lqr_stabilizing_and_command_following_plant()
+    print(stabilized_plant)
+    response = simulate_closed_loop_command_following_plant()
+    response.to_pandas().to_csv(pathlib.Path(__file__).parent / "data/pendulum_full_state_command_following_lqr.csv")
+    plot_controller_performance(response)
+
 
 if __name__ == "__main__":
-    test_lti_butter_worthfilter()
+    test_lqr_command_following_and_stabilizing_controller()
