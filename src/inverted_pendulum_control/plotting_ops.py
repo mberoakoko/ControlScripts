@@ -31,8 +31,31 @@ def simple_stabilizing_plot(response_data: control.TimeResponseData) -> None:
     ax_3.plot(t_data, data["theta"], linewidth=0.7, color="C3", label="theta")
     ax_4.plot(t_data, data["theta_dot"], linewidth=0.7, color="C4", label="theta_dot")
     ax_5.plot(t_data, data["u_force"], linewidth=0.7, color="C5", label="u_force")
-    for axis in [ax_1, ax_2, ax_3, ax_4, ax_5]:
-        axis.legend()
-    plt.title("Stabiling Controller")
-    plt.tight_layout()
-    plt.show()
+    add_legend_and_plot(ax_1, ax_2, ax_3, ax_4, ax_5, data, t_data)
+
+
+def plot_controller_performance(response_data: control.TimeResponseData) -> None:
+    data = response_data.to_pandas()
+    t_data = data["time"]
+    fig: Figure = plt.figure(figsize=(16, 9))
+    ax_1: Axes = fig.add_subplot(511)
+    ax_2: Axes = fig.add_subplot(512)
+    ax_3: Axes = fig.add_subplot(513)
+    ax_4: Axes = fig.add_subplot(514)
+    ax_5: Axes = fig.add_subplot(515)
+    ax_1.plot(t_data, data["x"], linewidth=0.7, color="C1", label="x")
+    ax_1.plot(t_data, data["x_d"],"--", linewidth=0.6, color="C1", label="x_d")
+
+    ax_2.plot(t_data, data["v"], linewidth=0.7, color="C2", label="v")
+    ax_2.plot(t_data, data["v_d"],"--", linewidth=0.6, color="C2", label="v")
+
+
+    ax_3.plot(t_data, data["theta"], linewidth=0.7, color="C3", label="theta")
+    ax_3.plot(t_data, data["theta_d"], "--", linewidth=0.6, color="C3", label="theta")
+
+    ax_4.plot(t_data, data["theta_dot"], linewidth=0.7, color="C4", label="theta_dot")
+    ax_4.plot(t_data, data["theta_dot_d"], "--", linewidth=0.6, color="C4", label="theta_dot")
+
+    add_legend_and_plot(ax_1, ax_2, ax_3, ax_4, ax_5, data, t_data)
+
+
