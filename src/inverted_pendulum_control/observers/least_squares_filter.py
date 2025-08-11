@@ -7,7 +7,7 @@ import numpy as np
 @dataclasses.dataclass
 class LeastSquaresFilter:
     plant_discr: control.StateSpace
-    P: np.ndarray = dataclasses.field(default=1e10 * np.diag([1, 13, 1, 1]))
+    P: np.ndarray = dataclasses.field(default=2 * np.diag([1, 13, 1, 1]))
     R: np.ndarray = dataclasses.field(default=np.diag([10, 12, 13, 7]))
     with_tracing: bool = dataclasses.field(default=False)
     K: np.ndarray = dataclasses.field(init=False)
