@@ -35,7 +35,7 @@ class LQRController(abc.ABC):
 
 @dataclasses.dataclass
 class LQR_Stabilizing_Controller(LQRController):
-    x_d: np.ndarray = dataclasses.field(default=np.array([0, 0, np.pi, 0]))
+    x_d: np.ndarray = dataclasses.field(default_factory=lambda :np.array([0, 0, np.pi, 0]))
 
     def _output_func(self, t, x: np.ndarray, u: np.ndarray, parmas):
         # print(u)

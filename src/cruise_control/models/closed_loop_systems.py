@@ -2,8 +2,6 @@ import control
 import numpy as np
 from typing import NamedTuple
 
-from sympy.physics.units import velocity
-
 from controller import StateSpaceIntegralController, generate_controller_gains, ControllerGains
 from system_dynamics import VehicleDynamics
 
