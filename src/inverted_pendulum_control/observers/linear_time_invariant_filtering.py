@@ -28,10 +28,10 @@ BLOCK_TAPS: int = 4
 
 @dataclasses.dataclass
 class FilterBlock:
-    x_channel_filter: FilterChannel = FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS))
-    v_channel_filter: FilterChannel = FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS))
-    theta_channel_filter: FilterChannel =  FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS))
-    theta_dot_channel_filter: FilterChannel = FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS))
+    x_channel_filter: FilterChannel = dataclasses.field(default_factory= lambda : FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS)))
+    v_channel_filter: FilterChannel = dataclasses.field(default_factory= lambda : FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS)))
+    theta_channel_filter: FilterChannel =  dataclasses.field(default_factory= lambda : FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS)))
+    theta_dot_channel_filter: FilterChannel = dataclasses.field(default_factory= lambda : FilterChannel(*butter_filter_factory(taps=BLOCK_TAPS)))
 
 
     def __update_block_state(self, t, x: np.ndarray, u: np.ndarray, params) -> np.ndarray:
