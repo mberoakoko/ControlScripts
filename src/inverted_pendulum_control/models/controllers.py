@@ -6,8 +6,8 @@ import abc
 @dataclasses.dataclass
 class LQRController(abc.ABC):
     plant: control.StateSpace
-    Q: np.ndarray = dataclasses.field(default=np.diag([1000, 1000, 1000, 1000])) # x, v, theta, theta_dot
-    R: np.ndarray = dataclasses.field(default=0.001*np.eye(5))                   # forcing penalty, _, _, _, _
+    Q: np.ndarray = dataclasses.field(default_factory= lambda :np.diag([1000, 1000, 1000, 1000])) # x, v, theta, theta_dot
+    R: np.ndarray = dataclasses.field(default_factory= lambda :0.001*np.eye(5))                   # forcing penalty, _, _, _, _
     K: np.ndarray = dataclasses.field(init=False)
 
     def __post_init__(self):
