@@ -114,3 +114,35 @@ class DSpaceControlLawSynthesizer:
 
         return _controller
 
+
+@dataclasses.dataclass
+class TrajectoryFollowingController:
+    sythesizer: DSpaceControlLawSynthesizer
+    control_law: Callable[[np.ndarray], np.ndarray] = dataclasses.field(init=False)
+    k_2: np.ndarray = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.control_law = self.sythesizer.sysnthesize_constroller()
+        self.k_2 = self.__calculate_feed_forward_gain()
+
+    def __calculate_feed_forward_gain(self) -> np.ndarray:
+        plant = self.sythesizer.plant
+        k_2: np.ndarray = -np.linalg.pinv(plant.C  @ np.linalg.inv(plant.A + plant.B @ self.sythesizer.K))
+        print(f"{k_2.shape=}")
+        return k_2
+
+
+    def __controller_output(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> ndarray:
+        x_state = u[:4]
+        command = u[4:]
+        return self.control_law(x_state) + self.k_2 @ command
+        ...
+
+    def as_nonlinear_io_system(self) -> control.NonlinearIOSystem:
+        return control.NonlinearIOSystem(
+            None, self.__controller_output,
+            name="TrajectoryFollowingController",
+            inputs=["x_1", "x_2", "x_3", "x_4", "c_1", "c_2"],
+            outputs=["u_1", "u_2"]
+        )
+
