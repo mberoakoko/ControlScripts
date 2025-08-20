@@ -52,3 +52,65 @@ class SimpleStabilizingController:
             inputs=["x_1", "x_2", "x_3", "x_4"],
             outputs=["u_1", "u_2"]
         )
+
+@dataclasses.dataclass
+class DSpaceControlLawSynthesizer:
+    plant: JetAircraftPlant | control.StateSpace
+    rise_time: float
+    settling_time: float
+    maximum_overshoot: float
+    r: float = dataclasses.field(init=False)
+    alpha: float = dataclasses.field(init=False)
+    c: float = dataclasses.field(init=False)
+    A: np.ndarray = dataclasses.field(init=False)
+    B: np.ndarray = dataclasses.field(init=False)
+    P: cvxpy.Variable = dataclasses.field(init=False)
+    Z: cvxpy.Variable = dataclasses.field(init=False)
+
+
+
+    def __post_init__(self):
+        self.r = 1.8**2 / self.rise_time**2
+        self.alpha = 4.6/self.settling_time
+        self.c = np.pi / np.log(self.maximum_overshoot)
+        n = self.plant.A.shape[0]
+        m = self.plant.B.shape[1]
+        self.Z = cvxpy.Variable((m, n))
+        self.P = cvxpy.Variable(self.plant.A.shape, symmetric=True)
+        self.A = self.plant.A
+        self.B = self.plant.B
+
+
+    def __rise_time_constraint(self) -> cvxpy.Constraint:
+        beta = (self.A@self.P + self.B @ self.Z)
+        lmi_mat = cvxpy.bmat([
+            [-self.r * self.P, beta],
+            [beta.T , -self.r*self.P]
+        ])
+        return lmi_mat << 0
+
+    def __settling_time_constraint(self) -> cvxpy.Constraint:
+        beta = (self.A@self.P + self.B @ self.Z)
+        lmi_mat = (beta + beta.T + self.alpha * self.P )
+        return  lmi_mat << 0
+
+    def __maximum_overshoot_constraint(self) -> cvxpy.Constraint:
+        beta = (self.A @ self.P + self.B @ self.Z)
+        lmi_mat = cvxpy.bmat([
+            [beta + beta.T, self.alpha * (beta - beta.T)],
+            [self.alpha * (beta - beta.T), beta + beta.T]
+        ])
+        return lmi_mat << 0
+
+    def sysnthesize_constroller(self, espilon: float = 0.001) -> Callable[[np.ndarray], np.ndarray]:
+        objective = cvxpy.Minimize(0)
+        n = self.plant.A.shape[0]
+        constraints = [self.P - espilon * np.eye(n) >> 0 , self.__rise_time_constraint(), self.__settling_time_constraint(), self.__maximum_overshoot_constraint()]
+        problem = cvxpy.Problem(objective, constraints)
+        problem.solve(verbose=True)
+        K: np.ndarray = (self.Z @ np.linalg.inv(self.P.value)).value
+        def _controller(self, x: np.ndarray) -> np.ndarray:
+            return K @ x
+
+        return _controller
+
