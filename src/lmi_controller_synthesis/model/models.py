@@ -3,7 +3,7 @@ import numpy as np
 import control
 
 @dataclasses.dataclass(frozen=True)
-class JetAircraftPlamt:
+class JetAircraftPlant:
     A: np.ndarray[float] = dataclasses.field(default_factory=lambda :np.array([
         [-0.558, -0.9968, 0.0802, 0.0415],
         [0.5980, -0.1150, -0.0318, 0],

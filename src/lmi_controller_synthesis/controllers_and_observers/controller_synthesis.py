@@ -9,11 +9,11 @@ import numpy as np
 from numpy import ndarray
 
 
-from models.model import JetAircraftPlant
+from model.models import JetAircraftPlant
 
 @dataclasses.dataclass()
 class SimpleStabilizingController:
-    plant: JetAircraftPlamt
+    plant: JetAircraftPlant
     alpha: float = dataclasses.field(default=0.1)
     u: Callable[[np.ndarray], np.ndarray] = dataclasses.field(init=False)
 
@@ -66,6 +66,7 @@ class DSpaceControlLawSynthesizer:
     B: np.ndarray = dataclasses.field(init=False)
     P: cvxpy.Variable = dataclasses.field(init=False)
     Z: cvxpy.Variable = dataclasses.field(init=False)
+    K: np.ndarray = dataclasses.field(init=False)
 
 
 
@@ -79,6 +80,7 @@ class DSpaceControlLawSynthesizer:
         self.P = cvxpy.Variable(self.plant.A.shape, symmetric=True)
         self.A = self.plant.A
         self.B = self.plant.B
+        self.K = np.array([0])
 
 
     def __rise_time_constraint(self) -> cvxpy.Constraint:
@@ -108,9 +110,9 @@ class DSpaceControlLawSynthesizer:
         constraints = [self.P - espilon * np.eye(n) >> 0 , self.__rise_time_constraint(), self.__settling_time_constraint(), self.__maximum_overshoot_constraint()]
         problem = cvxpy.Problem(objective, constraints)
         problem.solve(verbose=True)
-        K: np.ndarray = (self.Z @ np.linalg.inv(self.P.value)).value
+        self.K: np.ndarray = (self.Z @ np.linalg.inv(self.P.value)).value
         def _controller(self, x: np.ndarray) -> np.ndarray:
-            return K @ x
+            return self.K @ x
 
         return _controller
 
