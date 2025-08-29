@@ -23,6 +23,16 @@ class SimpleMassSpringDamper:
     def __plant_output(self, t: float, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
         return x
 
+    def get_linear_params(self) -> MassSpringDamperLinearParams:
+        return MassSpringDamperLinearParams(
+            A=np.array([
+                [0, 1],
+                [0, 0]
+            ]),
+            B=np.array([[0], [1]]),
+            Nabla=np.array([[1/self.m]]),
+        )
+
     def as_non_linear_plant(self) -> control.NonlinearIOSystem:
         return control.NonlinearIOSystem(
             self.__plant_update, self.__plant_output,
