@@ -40,3 +40,12 @@ class SimpleMassSpringDamper:
             inputs=["u"],
             outputs=["x", "x_dot"]
         )
+
+
+def create_reference_model(m_s_p: SimpleMassSpringDamper, q: np.ndarray , r: np.ndarray) -> control.StateSpace:
+    sys_parms = m_s_p.get_linear_params()
+    k, _, eig = control.lqr(sys_parms.A, sys_parms.B , q, r)
+    print(eig)
+    c = np.eye(sys_parms.A.shape[0])
+    k_2: np.ndarray = np.linalg.pinv(-c @ np.linalg.inv(sys_parms.A - sys_parms.B @ k) @ sys_parms.B)
+    return control.StateSpace(sys_parms.A - sys_parms.B @ k , sys_parms.B @ k_2 , c , np.zeros_like(sys_parms.B))
