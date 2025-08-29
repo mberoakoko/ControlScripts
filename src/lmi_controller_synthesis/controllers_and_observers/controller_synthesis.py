@@ -8,8 +8,8 @@ import control
 import numpy as np
 from numpy import ndarray
 
-
-from model.models import JetAircraftPlant
+from ..model.models import JetAircraftPlant
+# from model.models import JetAircraftPlant
 
 @dataclasses.dataclass()
 class SimpleStabilizingController:

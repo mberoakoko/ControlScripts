@@ -1,11 +1,14 @@
-from email.policy import default
-from sys import deactivate_stack_trampoline
 
 import control
 import dataclasses
-
 import numpy as np
 
+from typing import NamedTuple
+
+class MassSpringDamperLinearParams(NamedTuple):
+    A: np.ndarray
+    B: np.ndarray
+    Nabla: np.ndarray
 
 @dataclasses.dataclass
 class SimpleMassSpringDamper:
@@ -48,4 +51,5 @@ def create_reference_model(m_s_p: SimpleMassSpringDamper, q: np.ndarray , r: np.
     print(eig)
     c = np.eye(sys_parms.A.shape[0])
     k_2: np.ndarray = np.linalg.pinv(-c @ np.linalg.inv(sys_parms.A - sys_parms.B @ k) @ sys_parms.B)
-    return control.StateSpace(sys_parms.A - sys_parms.B @ k , sys_parms.B @ k_2 , c , np.zeros_like(sys_parms.B))
+
+    return control.StateSpace(sys_parms.A - sys_parms.B @ k , sys_parms.B @ k_2 , c , np.zeros((2,2)))
