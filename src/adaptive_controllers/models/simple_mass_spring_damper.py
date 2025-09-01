@@ -45,6 +45,8 @@ class SimpleMassSpringDamper:
         )
 
 
+
+
 def create_reference_model(m_s_p: SimpleMassSpringDamper, q: np.ndarray , r: np.ndarray) -> control.StateSpace:
     sys_parms = m_s_p.get_linear_params()
     k, _, eig = control.lqr(sys_parms.A, sys_parms.B , q, r)
