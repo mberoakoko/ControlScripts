@@ -56,7 +56,47 @@ class JetAircraftPlant:
         q: float = dataclasses.field(init=False)
 
         def __post_init__(self):
-            ...
+            self.A = np.array([
+                [0, 1],
+                [-self.k/self.m, -self.c/self.m],
+            ])
+
+            self.B_1 = np.array([
+                [0],
+                [1/self.m],
+            ])
+
+            self.B_2 = np.array([
+                [0],
+                [1/self.m],
+            ])
+
+            self.C_1 = np.array([
+                [self.alpha_1, 0],
+                [0, 0]
+            ])
+            self.C_2 = np.array([
+                [1, 0]
+            ])
+            self.D_1_1 = np.array([
+                [0],
+                [0]
+            ])
+            self.D_1_2 = np.array([
+                [0],
+                [self.alpha_2]
+            ])
+
+            self.D_2_1 = np.array([
+                [0]
+            ])
+
+            self.D_2_2 = np.array([
+                [0]
+            ])
+            
+            self.p = self.A.shape[0]
+
 
         def __plant_update(self,t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray[float]:
             u_forcing = u[:self.p]
