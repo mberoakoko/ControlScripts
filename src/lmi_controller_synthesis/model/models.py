@@ -35,3 +35,47 @@ class JetAircraftPlant:
             inputs=["u_1", "u_2"],
             outputs=["x_1", "x_2", "x_3", "x_4"]
         )
+
+    @dataclasses.dataclass
+    class MassSpringDamperExogenous:
+        m: float
+        c: float
+        k: float
+        alpha_1: float
+        alpha_2: float
+        A: np.ndarray = dataclasses.field(init=False)
+        B_1: np.ndarray = dataclasses.field(init=False)
+        B_2: np.ndarray = dataclasses.field(init=False)
+        C_1: np.ndarray = dataclasses.field(init=False)
+        C_2: np.ndarray = dataclasses.field(init=False)
+        D_1_1: np.ndarray = dataclasses.field(init=False)
+        D_1_2: np.ndarray = dataclasses.field(init=False)
+        D_2_1: np.ndarray = dataclasses.field(init=False)
+        D_2_2: np.ndarray = dataclasses.field(init=False)
+        p: float = dataclasses.field(init=False)
+        q: float = dataclasses.field(init=False)
+
+        def __post_init__(self):
+            ...
+
+        def __plant_update(self,t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray[float]:
+            u_forcing = u[:self.p]
+            w_forcing = u[self.p:]
+            return self.A @ x + self.B_1 @ u_forcing + self.B_2 @ w_forcing
+
+        def __plant_output(self, t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray:
+            u_forcing = u[:self.p]
+            w_forcing = u[self.p:]
+            return np.array([
+                self.C_1 @ x + self.D_1_1 @ u_forcing + self.D_1_2 @ w_forcing,
+                self.C_2 @ x + self.D_2_1 @ u_forcing + self.D_2_2 @ w_forcing,
+            ])
+
+        def as_non_linear_io_system(self) -> control.NonlinearIOSystem:
+            return control.NonlinearIOSystem(
+                self.__plant_update, self.__plant_output,
+                name="MassSpringDamperExogenousForcing",
+                states=["x", "x_dot"],
+                inputs=[...],
+                outputs=[...],
+            )
