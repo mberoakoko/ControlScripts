@@ -119,3 +119,21 @@ class JetAircraftPlant:
                 inputs=[...],
                 outputs=[...],
             )
+
+if __name__ == "__main__":
+    m_s_p_system = MassSpringDamperExogenous(
+        m=1,
+        c=1,
+        k=1,
+        alpha_1=1,
+        alpha_2=1,
+    )
+    print(m_s_p_system.as_non_linear_io_system())
+    sys_dyn = m_s_p_system.as_non_linear_io_system()
+    print(sys_dyn.input_labels)
+    w = np.array([])
+    u = np.array([])
+    excitation_signal = np.array([0, 0])
+    print(excitation_signal)
+    print(f"{sys_dyn.dynamics(0, np.array([0, 0]), excitation_signal)=}")
+    print(f"{sys_dyn.output(0, np.array([0, 0]), excitation_signal)=}")
