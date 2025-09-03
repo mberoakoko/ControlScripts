@@ -2,6 +2,9 @@ import dataclasses
 import numpy as np
 import control
 
+from src.adaptive_controllers.models.simple_mass_spring_damper import MassSpringDamperLinearParams
+
+
 @dataclasses.dataclass(frozen=True)
 class JetAircraftPlant:
     A: np.ndarray[float] = dataclasses.field(default_factory=lambda :np.array([
@@ -36,89 +39,95 @@ class JetAircraftPlant:
             outputs=["x_1", "x_2", "x_3", "x_4"]
         )
 
-    @dataclasses.dataclass
-    class MassSpringDamperExogenous:
-        m: float
-        c: float
-        k: float
-        alpha_1: float
-        alpha_2: float
-        A: np.ndarray = dataclasses.field(init=False)
-        B_1: np.ndarray = dataclasses.field(init=False)
-        B_2: np.ndarray = dataclasses.field(init=False)
-        C_1: np.ndarray = dataclasses.field(init=False)
-        C_2: np.ndarray = dataclasses.field(init=False)
-        D_1_1: np.ndarray = dataclasses.field(init=False)
-        D_1_2: np.ndarray = dataclasses.field(init=False)
-        D_2_1: np.ndarray = dataclasses.field(init=False)
-        D_2_2: np.ndarray = dataclasses.field(init=False)
-        p: float = dataclasses.field(init=False)
-        q: float = dataclasses.field(init=False)
+@dataclasses.dataclass
+class MassSpringDamperExogenous:
+    m: float
+    c: float
+    k: float
+    alpha_1: float
+    alpha_2: float
+    A: np.ndarray = dataclasses.field(init=False)
+    B_1: np.ndarray = dataclasses.field(init=False)
+    B_2: np.ndarray = dataclasses.field(init=False)
+    C_1: np.ndarray = dataclasses.field(init=False)
+    C_2: np.ndarray = dataclasses.field(init=False)
+    D_1_1: np.ndarray = dataclasses.field(init=False)
+    D_1_2: np.ndarray = dataclasses.field(init=False)
+    D_2_1: np.ndarray = dataclasses.field(init=False)
+    D_2_2: np.ndarray = dataclasses.field(init=False)
+    p: float = dataclasses.field(init=False)
+    q: float = dataclasses.field(init=False)
 
-        def __post_init__(self):
-            self.A = np.array([
-                [0, 1],
-                [-self.k/self.m, -self.c/self.m],
-            ])
+    def __post_init__(self):
+        self.A = np.array([
+            [0, 1],
+            [-self.k/self.m, -self.c/self.m],
+        ])
 
-            self.B_1 = np.array([
-                [0],
-                [1/self.m],
-            ])
+        self.B_1 = np.array([
+            [0],
+            [1/self.m],
+        ])
 
-            self.B_2 = np.array([
-                [0],
-                [1/self.m],
-            ])
+        self.B_2 = np.array([
+            [0],
+            [1/self.m],
+        ])
 
-            self.C_1 = np.array([
-                [self.alpha_1, 0],
-                [0, 0]
-            ])
-            self.C_2 = np.array([
-                [1, 0]
-            ])
-            self.D_1_1 = np.array([
-                [0],
-                [0]
-            ])
-            self.D_1_2 = np.array([
-                [0],
-                [self.alpha_2]
-            ])
+        self.C_1 = np.array([
+            [self.alpha_1, 0],
+            [0, 0]
+        ])
+        self.C_2 = np.array([
+            [1, 0]
+        ])
+        self.D_1_1 = np.array([
+            [0],
+            [0]
+        ])
+        self.D_1_2 = np.array([
+            [0],
+            [self.alpha_2]
+        ])
 
-            self.D_2_1 = np.array([
-                [0]
-            ])
+        self.D_2_1 = np.array([
+            [0]
+        ])
 
-            self.D_2_2 = np.array([
-                [0]
-            ])
-            
-            self.p = self.A.shape[0]
+        self.D_2_2 = np.array([
+            [0]
+        ])
+
+        self.p = self.B_1.shape[1]
+        self.q = self.A.shape[0]
 
 
-        def __plant_update(self,t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray[float]:
-            u_forcing = u[:self.p]
-            w_forcing = u[self.p:]
-            return self.A @ x + self.B_1 @ u_forcing + self.B_2 @ w_forcing
+    def __plant_update(self,t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray:
+        u_forcing = np.expand_dims(u[:self.p], axis=0)
+        w_forcing = np.expand_dims(u[self.p:], axis=0)
+        print(f"{x.shape=}")
+        print(f"{self.A @ x=}")
+        print(f"{self.B_1 @ u_forcing=}")
+        print(f"{self.B_2 @ w_forcing=}")
+        return self.A @ x + np.squeeze(self.B_1 @ u_forcing) + np.squeeze(self.B_2 @ w_forcing)
 
-        def __plant_output(self, t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray:
-            u_forcing = u[:self.p]
-            w_forcing = u[self.p:]
-            return np.array([
-                self.C_1 @ x + self.D_1_1 @ u_forcing + self.D_1_2 @ w_forcing,
-                self.C_2 @ x + self.D_2_1 @ u_forcing + self.D_2_2 @ w_forcing,
-            ])
+    def __plant_output(self, t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray:
+        u_forcing = u[:self.p]
+        w_forcing = u[self.p:]
+        result = np.r_[
+            self.C_1 @ x + self.D_1_1 @ u_forcing + self.D_1_2 @ w_forcing,
+            self.C_2 @ x + self.D_2_1 @ u_forcing + self.D_2_2 @ w_forcing
+        ]
+        return result
 
-        def as_non_linear_io_system(self) -> control.NonlinearIOSystem:
-            return control.NonlinearIOSystem(
-                self.__plant_update, self.__plant_output,
-                name="MassSpringDamperExogenousForcing",
-                states=["x", "x_dot"],
-                inputs=[...],
-                outputs=[...],
-            )
+    def as_non_linear_io_system(self) -> control.NonlinearIOSystem:
+         return control.NonlinearIOSystem(
+             self.__plant_update, self.__plant_output,
+             name="MassSpringDamperExogenousForcing",
+             states=["x", "x_dot"],
+             inputs=["w", "u"],
+             outputs=["z", "y_1", "y_2"],
+         )
 
 if __name__ == "__main__":
     m_s_p_system = MassSpringDamperExogenous(
