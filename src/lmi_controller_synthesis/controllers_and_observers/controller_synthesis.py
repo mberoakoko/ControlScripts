@@ -2,13 +2,13 @@ import dataclasses
 
 import cvxpy
 import cvxpy as cp
-from typing import Callable, Any
+from typing import Callable, Any, NamedTuple
 
 import control
 import numpy as np
 from numpy import ndarray
 
-from ..model.models import JetAircraftPlant
+from lmi_controller_synthesis.model.models import JetAircraftPlant
 # from model.models import JetAircraftPlant
 
 @dataclasses.dataclass()
@@ -148,3 +148,43 @@ class TrajectoryFollowingController:
             outputs=["u_1", "u_2"]
         )
 
+
+class NineMatrixData(NamedTuple):
+    A: np.ndarray
+    B_1: np.ndarray
+    B_2: np.ndarray
+    C_1: np.ndarray
+    C_2: np.ndarray
+    D_1_1: np.ndarray
+    D_1_2: np.ndarray
+    D_2_1: np.ndarray
+    D_2_2: np.ndarray
+
+@dataclasses.dataclass
+class FullStateOptimalController:
+    params: NineMatrixData
+    Y: cvxpy.Variable = dataclasses.field(init=False)
+    Z: cvxpy.Variable = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.Y = cvxpy.Variable(self.params.A.shape)
+        self.Z = cvxpy.Variable((self.params.B_2.shape[1], self.params.A.shape[0]))
+
+    def __sythesize_controller(self) -> np.ndarray:
+        gamma = cvxpy.Variable()
+
+        alpha = self.Y @ self.params.A.T + self.Z.T @ self.params.B_2.T + self.params.B_2@self.Z
+        beta = self.Y @ self.params.C_1 + self.Z.T @ self.params.D_1_2.T
+        eye_1 = np.eye(self.params.B_1.T.shape[0], self.params.B_1.shape[1])
+        eye_2 = np.eye(self.params.D_1_1.shape[0], self.params.D_1_1.T.shape[1])
+        row_1 = [-self.Y , np.zeros((self.Y.shape[0], self.params.B_1.T.shape[1])), np.zeros((self.Y.shape[0], self.params.B_1.shape[1])), np.zeros((self.Y.shape[0], self.params.D_1_1.T.shape[1]))]
+        row_2 = [np.zeros(self.Y.shape),alpha, self.params.B_1, beta ]
+        row_3 = [np.zeros((self.params.B_1.T.shape[0], self.Y.shape[1])), self.params.B_1.T, -gamma*eye_1, self.params.D_1_1.T]
+        row_4 = [np.zeros((self.params.D_1_1.shape[0], self.Y.shape[1])), beta.T, self.params.D_1_1, -gamma*eye_2]
+        constraints = [cvxpy.bmat([row_1, row_2, row_3, row_4]) << 0]
+        problem = cvxpy.Problem(cvxpy.Minimize(gamma), constraints=constraints)
+        problem.solve(verbose=True)
+        return self.Z.value @ np.linalg.inv(self.Y.value)
+
+    def f_matrix(self):
+        return self.__sythesize_controller()
