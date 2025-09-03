@@ -15,8 +15,6 @@ class LowerStarController:
         return self.params.A @ x + self.params.B @ u
 
     def __controller_full_state_output(self, t: float, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
-        print(f"{self.params.D=}")
-        print(f"{u=}")
         return self.params.D @ u
 
     def __controller_dynamic_output(self, t: float, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:

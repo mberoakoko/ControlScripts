@@ -18,8 +18,8 @@ def create_lower_star_mass_spring_damper() -> control.NonlinearIOSystem:
         params=control.ss(
             np.zeros_like(raw_plant.A),
             np.zeros((2, 2)),
-            np.zeros((2, 2)),
-            np.ones((2, 2))
+            np.zeros((1, 2)),
+            np.ones((1, 2))
         )
     )
     plant = raw_plant.as_non_linear_io_system()
@@ -32,3 +32,4 @@ if __name__ == "__main__":
     closed_Loop_system = create_lower_star_mass_spring_damper()
     print(closed_Loop_system)
     print(closed_Loop_system.dynamics(1, np.array([0, 0]), [0]))
+    print(closed_Loop_system.output(1, np.array([0, 0]), [0]))
