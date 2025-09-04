@@ -129,6 +129,45 @@ class MassSpringDamperExogenous:
              outputs=["z", "y_1", "y_2"],
          )
 
+@dataclasses.dataclass
+class DelayBlock:
+    time_delay: float = dataclasses.field(default=0.01)
+    order: int  = dataclasses.field(default=3)
+    channel_1: control.StateSpace = dataclasses.field(init=False)
+    channel_2: control.StateSpace = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.channel_1 = control.TransferFunction(*control.pade(self.time_delay, self.order)).to_ss()
+        self.channel_2 = control.TransferFunction(*control.pade(self.time_delay, self.order)).to_ss()
+        print(control.parallel(self.channel_1, self.channel_2))
+
+    def __update_func(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
+        x_1, x_2 = x
+        u_1, u_2 = u
+        return np.r_[
+            self.channel_1.dynamics(t, x_1, u_1, params),
+            self.channel_2.dynamics(t, x_2, u_2, params)
+        ]
+
+    def __output_func(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
+        x_1, x_2 = x
+        u_1, u_2 = u
+        return np.r_[
+            self.channel_1.output(t, x_1, u_1, params),
+            self.channel_2.output(t, x_2, u_2, params)
+        ]
+
+    def output_forced_response(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
+        ...
+
+    def as_nonlinear_io_system(self) -> control.NonlinearIOSystem:
+        return control.NonlinearIOSystem(
+            self.__update_func, self.__output_func,
+            name="DelayBlock",
+            inputs=["y_1_prime", "y_2_prime"],
+            outputs=["y_1", "y_2"],
+        )
+
 if __name__ == "__main__":
     m_s_p_system = MassSpringDamperExogenous(
         m=1,
