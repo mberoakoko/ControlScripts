@@ -3,6 +3,7 @@ import numpy as np
 import control
 
 from src.adaptive_controllers.models.simple_mass_spring_damper import MassSpringDamperLinearParams
+from steering_control.models.system_dynamics import DelayBlock
 
 
 @dataclasses.dataclass(frozen=True)
@@ -105,10 +106,6 @@ class MassSpringDamperExogenous:
     def __plant_update(self,t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray:
         u_forcing = np.expand_dims(u[:self.p], axis=0)
         w_forcing = np.expand_dims(u[self.p:], axis=0)
-        print(f"{x.shape=}")
-        print(f"{self.A @ x=}")
-        print(f"{self.B_1 @ u_forcing=}")
-        print(f"{self.B_2 @ w_forcing=}")
         return self.A @ x + np.squeeze(self.B_1 @ u_forcing) + np.squeeze(self.B_2 @ w_forcing)
 
     def __plant_output(self, t, x: np.ndarray[float], u: np.ndarray[float], params: dict) -> np.ndarray:
@@ -126,46 +123,31 @@ class MassSpringDamperExogenous:
              name="MassSpringDamperExogenousForcing",
              states=["x", "x_dot"],
              inputs=["w", "u"],
-             outputs=["z", "y_1", "y_2"],
+             outputs=["z", "y_1_prime", "y_2_prime"],
          )
 
 @dataclasses.dataclass
 class DelayBlock:
-    time_delay: float = dataclasses.field(default=0.01)
+    time_delay: float = dataclasses.field(default=0.001)
     order: int  = dataclasses.field(default=3)
     channel_1: control.StateSpace = dataclasses.field(init=False)
     channel_2: control.StateSpace = dataclasses.field(init=False)
+    delay_block: control.StateSpace = dataclasses.field(init=False)
+
 
     def __post_init__(self):
         self.channel_1 = control.TransferFunction(*control.pade(self.time_delay, self.order)).to_ss()
         self.channel_2 = control.TransferFunction(*control.pade(self.time_delay, self.order)).to_ss()
-        print(control.parallel(self.channel_1, self.channel_2))
-
-    def __update_func(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
-        x_1, x_2 = x
-        u_1, u_2 = u
-        return np.r_[
-            self.channel_1.dynamics(t, x_1, u_1, params),
-            self.channel_2.dynamics(t, x_2, u_2, params)
-        ]
-
-    def __output_func(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
-        x_1, x_2 = x
-        u_1, u_2 = u
-        return np.r_[
-            self.channel_1.output(t, x_1, u_1, params),
-            self.channel_2.output(t, x_2, u_2, params)
-        ]
-
-    def output_forced_response(self, t, x: np.ndarray, u: np.ndarray, params: dict) -> np.ndarray:
-        ...
+        self.delay_block = control.append(self.channel_1, self.channel_2)
 
     def as_nonlinear_io_system(self) -> control.NonlinearIOSystem:
         return control.NonlinearIOSystem(
-            self.__update_func, self.__output_func,
+            self.delay_block.dynamics, self.delay_block.output,
             name="DelayBlock",
+            states=self.delay_block.nstates,
             inputs=["y_1_prime", "y_2_prime"],
             outputs=["y_1", "y_2"],
+            params=None
         )
 
 if __name__ == "__main__":
@@ -178,10 +160,12 @@ if __name__ == "__main__":
     )
     print(m_s_p_system.as_non_linear_io_system())
     sys_dyn = m_s_p_system.as_non_linear_io_system()
-    print(sys_dyn.input_labels)
-    w = np.array([])
-    u = np.array([])
     excitation_signal = np.array([0, 0])
     print(excitation_signal)
     print(f"{sys_dyn.dynamics(0, np.array([0, 0]), excitation_signal)=}")
     print(f"{sys_dyn.output(0, np.array([0, 0]), excitation_signal)=}")
+    delay_block = DelayBlock(
+        time_delay=0.01
+    ).as_nonlinear_io_system()
+    sys_with_delay = control.interconnect([sys_dyn, delay_block])
+    print(sys_with_delay)

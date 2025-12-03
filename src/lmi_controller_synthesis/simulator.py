@@ -1,10 +1,10 @@
 import control
 import numpy as np
 
-from model.models import MassSpringDamperExogenous
-from controllers_and_observers.robust_controllers import LowerStarController
+from model.models import MassSpringDamperExogenous, DelayBlock
+from controllers_and_observers.robust_controllers import LowerStarController, ControllerType
 from controllers_and_observers.controller_synthesis import FullStateOptimalController, NineMatrixData
-_SIMULATION_DT: float = 0.001
+_SIMULATION_DT: float = 0.01
 
 def create_lower_star_mass_spring_damper() -> control.NonlinearIOSystem:
     raw_plant = MassSpringDamperExogenous(
@@ -39,17 +39,18 @@ def create_lower_star_mass_spring_damper() -> control.NonlinearIOSystem:
         )
     )
     plant = raw_plant.as_non_linear_io_system()
-    ctrl_plant = raw_controller_full_state.as_non_linear_io_system()
-    closed_Loop_system_ = control.interconnect([plant, ctrl_plant], inputs=["w",], outputs=["z", ])
+    ctrl_plant = raw_controller_full_state.as_non_linear_io_system(controller_type=ControllerType.FULL_STATE_CONTROLLER)
+    delay_block = DelayBlock().as_nonlinear_io_system()
+    u_delay = control.TransferFunction(*control.pade(0.01, 7), inputs=["u_prime"], outputs=["u"]).to_ss()
+    print(f"{u_delay=}")
+    closed_Loop_system_ = control.interconnect([plant, delay_block, ctrl_plant, u_delay], inputs=["w",], outputs=["z", ])
     return closed_Loop_system_
 
 
 def try_out_closed_loop_system_with_mock_controller():
     closed_Loop_system = create_lower_star_mass_spring_damper()
-    print(closed_Loop_system)
-    print(closed_Loop_system.dynamics(1, np.array([0, 0]), [0]))
-    print(closed_Loop_system.output(1, np.array([0, 0]), [0]))
 
+    print(closed_Loop_system)
 
 def try_out_fullstate_controller_synthesis():
     raw_plant = MassSpringDamperExogenous(
@@ -78,5 +79,15 @@ def try_out_fullstate_controller_synthesis():
     controller_sythesizer.f_matrix()
 
 
+
+def simulate_mass_spring_damper(dt=_SIMULATION_DT, t_final=10):
+    system = create_lower_star_mass_spring_damper()
+    print(system)
+    t_sim = np.linspace(0, t_final, int(t_final/dt))
+    u = np.zeros_like(t_sim)
+    u[t_sim < 2] = 0
+    response: control.TimeResponseData = control.input_output_response(system, t_sim, u)
+
+
 if __name__ == "__main__":
-    create_lower_star_mass_spring_damper()
+    simulate_mass_spring_damper()

@@ -36,7 +36,7 @@ class LowerStarController:
 
             case ControllerType.DYNAMIC_UPDATE_CONTROLLER:
                 return control.NonlinearIOSystem(
-                    self.__controller_update, self.__controller_full_state_output,
+                    self.__controller_update,self.__controller_dynamic_output,
                     name="LowerStarControllerDynamicUpdate",
                     states=["x_ctrl"],
                     inputs=controller_inputs,
@@ -45,7 +45,7 @@ class LowerStarController:
 
     def as_non_linear_io_system(self,
                                 contoller_inputs: list[str] = ("y_1", "y_2" ),
-                                controller_outputs: list[str] = ("u", ),
+                                controller_outputs: list[str] = ("u_prime", ),
                                 controller_type: ControllerType = ControllerType.FULL_STATE_CONTROLLER) -> control.NonlinearIOSystem:
         return self.__controller_factory(controller_type, contoller_inputs, controller_outputs, )
 
